@@ -60,19 +60,21 @@ styles = {
     'RED-QL': {'color': '#000000', 'ls': '--', 'lw': 2.5}
 }
 
+# Thêm nhãn tiếng Việt cho từng kịch bản tải
 scenarios = [
-    ("Light", 3, "N = 5", "a"),
-    ("Moderate", 4, "N = 20", "b"),
-    ("Heavy", 5, "N = 50", "c")
+    ("Light", "Tải nhẹ", 3, "N = 5", "a"),
+    ("Moderate", "Tải trung bình", 4, "N = 20", "b"),
+    ("Heavy", "Tải nặng", 5, "N = 50", "c")
 ]
 
 full_table_rows = []
 metrics_by_sc = {"Queue": [], "Delay": [], "Tput": []}
 
 print("\n=== BẢNG TỔNG HỢP KẾT QUẢ MÔ PHỎNG TỪ NS-3 ===")
-for sc_name, fig_num, n_label, sc_letter in scenarios:
+for sc_name, vn_sc, fig_num, n_label, sc_letter in scenarios:
     # Khởi tạo ảnh gộp 3 biểu đồ
-    fig_comb = plt.figure(figsize=(14, 10), dpi=300)
+    fig_comb = plt.figure(figsize=(14, 10.5), dpi=300)
+    fig_comb.subplots_adjust(hspace=0.34, wspace=0.22, top=0.90)
     ax1 = fig_comb.add_subplot(2, 2, 1)
     ax2 = fig_comb.add_subplot(2, 2, 2)
     ax3 = fig_comb.add_subplot(2, 2, (3, 4))
@@ -81,19 +83,25 @@ for sc_name, fig_num, n_label, sc_letter in scenarios:
     new_w = pos3.width * 0.48
     ax3.set_position([pos3.x0 + (pos3.width - new_w) / 2.0, pos3.y0, new_w, pos3.height])
 
+    # Tiêu đề chung cho ảnh gộp 3-trong-1
+    fig_comb.suptitle(
+        f"Hình {fig_num}: Kịch bản {vn_sc.lower()} ({sc_name} Traffic, {n_label}) — (a) hàng đợi; (b) độ trễ; (c) thông lượng",
+        fontsize=14, fontweight='bold', y=0.96
+    )
+
     # Khởi tạo 3 ảnh tách rời cho từng yếu tố (a), (b), (c)
     fig_a, ax_a = plt.subplots(figsize=(8.5, 5.8), dpi=300)
     fig_b, ax_b = plt.subplots(figsize=(8.5, 5.8), dpi=300)
     fig_c, ax_c = plt.subplots(figsize=(8.5, 5.8), dpi=300)
 
-    print(f"\n--- Kịch bản: {sc_name} Traffic ---")
+    print(f"\n--- Kịch bản: {vn_sc} ({sc_name} Traffic - {n_label}) ---")
     print(f"{'Thuật toán':<10} | {'Peak Queue':<12} | {'Avg Queue (pkts)':<18} | {'Avg Delay (ms)':<16} | {'Throughput (Mbps)':<18}")
     print("-" * 82)
 
     sc_rows = []
-    q_row = [f"{sc_name} ({n_label})"]
-    d_row = [f"{sc_name} ({n_label})"]
-    t_row = [f"{sc_name} ({n_label})"]
+    q_row = [f"{vn_sc}\n({n_label})"]
+    d_row = [f"{vn_sc}\n({n_label})"]
+    t_row = [f"{vn_sc}\n({n_label})"]
 
     for idx, alg in enumerate(['RED', 'NLRED', 'SmRED', 'RED-QL']):
         q_path = os.path.join(RESULTS_DIR, f"{alg}_{sc_name}_queue.dat")
@@ -124,7 +132,7 @@ for sc_name, fig_num, n_label, sc_letter in scenarios:
 
         print(f"{alg:<10} | {peak_q:<12.2f} | {avg_q:<18.2f} | {avg_d:<16.2f} | {tput:<18.2f}")
 
-        sc_col_text = f"{sc_name} Traffic\n({n_label})" if idx == 0 else ""
+        sc_col_text = f"{vn_sc}\n({sc_name}, {n_label})" if idx == 0 else ""
         full_table_rows.append([sc_col_text, alg, f"{peak_q:.2f}", f"{avg_q:.2f}", f"{avg_d:.2f}", f"{tput:.2f}"])
         sc_rows.append([alg, f"{peak_q:.2f}", f"{avg_q:.2f}", f"{avg_d:.2f}", f"{tput:.2f}"])
         q_row.append(f"{avg_q:.2f}")
@@ -141,7 +149,7 @@ for sc_name, fig_num, n_label, sc_letter in scenarios:
         cols_sc = ["Thuật toán", "Peak Queue\n(packets)", "Avg Queue\n(packets)", "Avg Delay\n(ms)", "Throughput\n(Mbps)"]
         fig_s, ax_s = plt.subplots(figsize=(9.0, 3.4), dpi=300)
         ax_s.axis('off')
-        ax_s.set_title(f"Kết quả mô phỏng kịch bản {sc_name} Traffic ({n_label})", fontsize=13, fontweight='bold', pad=12)
+        ax_s.set_title(f"Kết quả mô phỏng kịch bản {vn_sc.lower()} - {sc_name} Traffic ({n_label})", fontsize=13, fontweight='bold', pad=12)
         t_s = ax_s.table(cellText=sc_rows, colLabels=cols_sc, cellLoc='center', loc='center', colWidths=[0.2]*5)
         t_s.auto_set_font_size(False)
         t_s.set_fontsize(11)
@@ -167,11 +175,11 @@ for sc_name, fig_num, n_label, sc_letter in scenarios:
         fig_s.savefig(os.path.join(PLOTS_DIR, f"Bang_5_5{sc_letter}_{sc_name}_Traffic.png"), bbox_inches='tight', dpi=300)
         plt.close(fig_s)
 
-    # Lưu ảnh biểu đồ gộp
+    # Lưu ảnh biểu đồ gộp với nhãn (a) hàng đợi; (b) độ trễ; (c) thông lượng
     for ax, ylabel, sub_label, leg_loc in [
-        (ax1, "Average Queue Size (Packets)", "(a)", "upper right"),
-        (ax2, "Delay (ms)", "(b)", "upper right"),
-        (ax3, "Throughput (Mbps)", "(c)", "lower right")
+        (ax1, "Average Queue Size (Packets)", "(a) Hàng đợi", "upper right"),
+        (ax2, "Delay (ms)", "(b) Độ trễ", "upper right"),
+        (ax3, "Throughput (Mbps)", "(c) Thông lượng", "lower right")
     ]:
         ax.set_xlabel(f"Simulation Time (Seconds)\n{sub_label}")
         ax.set_ylabel(ylabel)
@@ -182,12 +190,13 @@ for sc_name, fig_num, n_label, sc_letter in scenarios:
     fig_comb.savefig(os.path.join(PLOTS_DIR, f"Figure_{fig_num}_{sc_name}_Traffic.png"), bbox_inches='tight', dpi=300)
     plt.close(fig_comb)
 
-    # Lưu 3 ảnh biểu đồ tách rời (a, b, c)
+    # Lưu 3 ảnh biểu đồ tách rời (a, b, c) kèm tiêu đề tải và nhãn tương ứng
     for fig_sep, ax_sep, ylabel, sub_label, suffix, leg_loc in [
-        (fig_a, ax_a, "Average Queue Size (Packets)", "(a)", "a_Queue", "upper right"),
-        (fig_b, ax_b, "Delay (ms)", "(b)", "b_Delay", "upper right"),
-        (fig_c, ax_c, "Throughput (Mbps)", "(c)", "c_Throughput", "lower right")
+        (fig_a, ax_a, "Average Queue Size (Packets)", "(a) Hàng đợi", "a_Queue", "upper right"),
+        (fig_b, ax_b, "Delay (ms)", "(b) Độ trễ", "b_Delay", "upper right"),
+        (fig_c, ax_c, "Throughput (Mbps)", "(c) Thông lượng", "c_Throughput", "lower right")
     ]:
+        ax_sep.set_title(f"{vn_sc} ({sc_name} Traffic, {n_label}) — {sub_label}", fontsize=13, fontweight='bold', pad=10)
         ax_sep.set_xlabel(f"Simulation Time (Seconds)\n{sub_label}")
         ax_sep.set_ylabel(ylabel)
         ax_sep.set_xlim(0, 100)
@@ -258,8 +267,8 @@ def save_metric_table(title, rows_data, fname):
     plt.savefig(os.path.join(PLOTS_DIR, fname), bbox_inches='tight', dpi=300)
     plt.close()
 
-save_metric_table("Bảng 1: So sánh kích thước hàng đợi trung bình - Average Queue Size (packets)", metrics_by_sc["Queue"], "Bang_1_Average_Queue_Size.png")
-save_metric_table("Bảng 2: So sánh độ trễ hàng đợi trung bình - Average Delay (ms)", metrics_by_sc["Delay"], "Bang_2_Average_Delay.png")
-save_metric_table("Bảng 3: So sánh thông lượng trung bình - Throughput (Mbps)", metrics_by_sc["Tput"], "Bang_3_Throughput.png")
+save_metric_table("Bảng 1: So sánh kích thước hàng đợi trung bình - (a) Hàng đợi (packets)", metrics_by_sc["Queue"], "Bang_1_Average_Queue_Size.png")
+save_metric_table("Bảng 2: So sánh độ trễ hàng đợi trung bình - (b) Độ trễ (ms)", metrics_by_sc["Delay"], "Bang_2_Average_Delay.png")
+save_metric_table("Bảng 3: So sánh thông lượng trung bình - (c) Thông lượng (Mbps)", metrics_by_sc["Tput"], "Bang_3_Throughput.png")
 
 print(f"\n-> Đã xuất toàn bộ biểu đồ và các bảng số liệu tại: {PLOTS_DIR}")
